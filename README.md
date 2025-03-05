@@ -27,4 +27,13 @@ Pour désactiver le venv, juste rentrer *deactivate*
 ## Lecture des données de l'API
 Comme indiqué plus haut, la lecture des données sera faite via *Kafka*. 
 Il s'agit d'une plateforme de streaming distribuée qui permet de collecter, traiter et diffuser des flux de données en temps réel entre différents systèmes de manière fiable et scalable. 
-Il fonctionne avec des topics où les producteurs publient des messages et les consommateurs les lisent de manière asynchrone. Cette dernière signifie que une fois les messages publiés par les proudcteurs, les consommateurs les consomment à leur rythme. Kafka ne force par la lecture immédiate des messages.
+Il fonctionne avec des topics où les producteurs publient des messages et les consommateurs les lisent de manière asynchrone. Cette dernière signifie qu'une fois les messages publiés par les proudcteurs, les consommateurs les consomment à leur rythme. Kafka ne force par la lecture immédiate des messages.
+
+L'API à interroger est celle-ci : https://opensky-network.org/api/states/all
+La liste des données utiles aux Use Cases :
+
+| Index | Property | Type | Description
+| ----- |----------|------|------------
+|0      |icao24   |string|  Unique ICAO 24-bit address of the transponder in hex string representation.
+|1      |callsign |string| Callsign of the vehicle (8 chars). Can be null if no callsign has been received.
+|2      |origin_country |string| Callsign of the vehicle (8 chars). Can be null if no callsign has been received.
