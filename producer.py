@@ -3,7 +3,7 @@ import json
 import requests
 import time
 
-from config import KAFKA_BROKER, OPENSKY_API_URL, TOPIC
+from config.appconfig import KAFKA_BROKER, OPENSKY_API_URL, TOPIC
 
 # Init Kafka producer
 producer = KafkaProducer(
