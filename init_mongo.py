@@ -13,16 +13,17 @@ def get_client():
 
 def create_collection(client: MongoClient, database_name: str, collection_name: str,):
     try:
-        if database_name in client.list_database_names():
-            print(f"The database {database_name} already exists.")
-        else:
-            database = client[database_name]
+        #if database_name in client.list_database_names():
+        #    print(f"The database {database_name} already exists.")
+        #    database = database_name
+        #else:
+        database = client[database_name]
         
         # Create the collection to insert data
-        if collection_name in database.list_collections():
-            print(f"The collection {collection_name} already exists.")
-        else:
-            return database[collection_name]
+        #if collection_name in database.list_collections():
+        #    print(f"The collection {collection_name} already exists.")
+        #else:
+        return database[collection_name]
 
     except Exception as e:
         raise Exception("Unable to find the document due to the following error: ", e)

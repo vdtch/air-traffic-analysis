@@ -29,13 +29,13 @@ while True:
             "origin_country": state[2],
             "time_position": state[3],
             "last_contact": state[4],
-            "longitude": state[5],
-            "latitude": state[6],
+            "longitude": state[5] if len(state) > 5 and state[5] is not None else 0,
+            "latitude": state[6] if len(state) > 6 and state[6] is not None else 0,
             "baro_altitude": state[7],
-            "on_ground": state[8],
-            "velocity": state[9],
-            "true_track": state[10],
-            "vertical_rate": state[11],
+            "on_ground": state[8] if len(state) > 8 and state[8] is not None else False,
+            "velocity": state[9] if len(state) > 9 else 0,
+            "true_track": state[10] if len(state) > 10 else 0,
+            "vertical_rate": state[11] if len(state) > 11 else 0,
         }
         producer.send(TOPIC, message)
     
