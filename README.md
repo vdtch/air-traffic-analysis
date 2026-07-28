@@ -74,5 +74,82 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 ```
 
+Placez ce fichier à la racine du projet, puis lancez le cluster :
+```
+docker compose up -d
+```
+Pour arrêter le cluster : `docker compose down`
+
 ### Producer
-Le module producer.py est utilisé pour implémenter le comportement du producer Kafka. Dans ce module les données de l'API sont récupérées et envoyés au topic
+Le module producer.py implémente le comportement du producer Kafka. Les données de l'API y sont récupérées puis envoyées au topic *opensky-data*.
+
+Le déroulement est le suivant :
+1. Initialisation du producer avec l'adresse du broker et un sérialiseur JSON (`value_serializer`), car Kafka ne transporte que des octets.
+2. Appel de l'API OpenSky via `requests`. La réponse contient une clé *states*, qui est une liste de listes : chaque sous-liste décrit un aéronef, position par position, selon le tableau ci-dessus.
+3. Transformation de chaque liste en dictionnaire lisible (icao24, callsign, latitude, longitude, etc.) et envoi au topic.
+4. Mise en veille de 10 secondes avant le prochain appel, pour ne pas saturer l'API.
+
+Lancement :
+```
+python producer.py
+```
+
+### Consumer
+Le module consumer.py lit les messages du topic, les stocke dans MongoDB et produit une visualisation.
+
+Le déroulement est le suivant :
+1. Initialisation du consumer sur le topic *opensky-data* avec un désérialiseur JSON.
+2. Connexion à MongoDB et récupération de la collection cible via le module init_mongo.
+3. Boucle infinie sur les messages : chaque message est inséré dans la collection *flights*.
+4. Toutes les 10 itérations, les données accumulées sont chargées dans un DataFrame pandas, filtrées sur les vols en l'air (`on_ground == False`), puis affichées sur un nuage de points longitude/latitude coloré par la vitesse.
+
+Lancement, dans un second terminal :
+```
+python consumer.py
+```
+
+### Persistance dans MongoDB
+Le stockage est assuré par une base MongoDB Atlas. Le module init_mongo expose deux fonctions :
+- `get_client()` : construit l'URI de connexion à partir de la configuration, ouvre le client et vérifie la connexion avec un *ping*.
+- `create_collection()` : renvoie la collection demandée et la crée si elle n'existe pas encore.
+
+Les données sont écrites dans la base *opensky*, collection *flights*.
+
+Les identifiants ne sont jamais versionnés : ils sont lus depuis un fichier .env à la racine du projet, ignoré par git. Créez ce fichier sur le modèle suivant :
+```
+MONGO_HOSTNAME=<votre-cluster>.mongodb.net
+MONGO_CLUSTERNAME=<nom-du-cluster>
+MONGO_USERNAME=<utilisateur>
+MONGO_PASSWORD=<mot-de-passe>
+```
+
+## Installation des dépendances
+Une fois le venv activé :
+```
+pip install -r requirements.txt
+```
+
+## Structure du projet
+```
+air-traffic-analysis/
+├── config/
+│   ├── appconfig.py      # Paramètres Kafka et URL de l'API OpenSky
+│   └── mongoconfig.py    # Lecture des variables .env et construction de l'URI Mongo
+├── init_mongo.py         # Connexion MongoDB et création de la collection
+├── producer.py           # Lecture de l'API et publication dans Kafka
+├── consumer.py           # Consommation, stockage Mongo et visualisation
+├── requirements.txt
+└── README.md
+```
+
+## Ordre de lancement
+1. Démarrer le cluster Kafka : `docker compose up -d`
+2. Vérifier que le fichier .env est renseigné
+3. Lancer le producer : `python producer.py`
+4. Lancer le consumer dans un autre terminal : `python consumer.py`
+
+## Prochaines étapes
+- Remplacer les traitements pandas par du *PySpark* pour absorber une volumétrie plus importante
+- Ajouter *Prefect* pour l'orchestration des flux
+- Mettre en place des index MongoDB sur icao24 et time_position pour accélérer les requêtes
+- Ajouter des tests et une gestion des erreurs sur les appels API

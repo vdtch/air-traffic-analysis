@@ -1,29 +1,40 @@
 from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.errors import PyMongoError
+from pymongo.server_api import ServerApi
+
 from config.mongoconfig import MongoConfig
 
 
-def get_client():
+def get_client() -> MongoClient:
+    """Create a client and check that the MongoDB deployment is reachable."""
     config = MongoConfig()
     uri = config.get_mongo_uri()
-    client = MongoClient(uri) # Create a client and connect to the server
-    client.admin.command('ping') # Send a ping to confirm a successful connection
+
+    try:
+        client = MongoClient(uri, server_api=ServerApi("1"))
+        client.admin.command("ping")  # Send a ping to confirm a successful connection
+    except PyMongoError as error:
+        raise ConnectionError(f"Unable to connect to MongoDB: {error}") from error
+
     print("Pinged your deployment. You successfully connected to MongoDB!")
     return client
 
 
-def create_collection(client: MongoClient, database_name: str, collection_name: str,):
+def create_collection(client: MongoClient, database_name: str, collection_name: str) -> Collection:
+    """Return the collection, creating it if it does not exist yet."""
     try:
-        #if database_name in client.list_database_names():
-        #    print(f"The database {database_name} already exists.")
-        #    database = database_name
-        #else:
         database = client[database_name]
-        
-        # Create the collection to insert data
-        #if collection_name in database.list_collections():
-        #    print(f"The collection {collection_name} already exists.")
-        #else:
+
+        if collection_name in database.list_collection_names():
+            print(f"The collection {collection_name} already exists in {database_name}.")
+        else:
+            database.create_collection(collection_name)
+            print(f"The collection {collection_name} has been created in {database_name}.")
+
         return database[collection_name]
 
-    except Exception as e:
-        raise Exception("Unable to find the document due to the following error: ", e)
+    except PyMongoError as error:
+        raise RuntimeError(
+            f"Unable to create the collection {collection_name} in {database_name}: {error}"
+        ) from error
